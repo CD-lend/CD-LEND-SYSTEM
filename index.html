@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CDレンタルカタログ</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --surface: #ffffff;
+      --ink: #1b1b1b;
+      --muted: #666666;
+      --accent: #1f6feb;
+      --accent-soft: #eef5ff;
+      --border: #dcd6ca;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px 16px 64px;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 1.5rem;
+    }
+
+    .sub {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .controls {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 20px;
+      display: grid;
+      gap: 14px;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      border: 1px solid #c8c2b6;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      background: #fcfbf8;
+      color: var(--ink);
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .quick-nums {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .num-btn {
+      border: 1px solid var(--border);
+      background: #faf8f3;
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .num-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      cursor: pointer;
+      transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+    }
+
+    .card.selected {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      box-shadow: 0 6px 18px rgba(31, 111, 235, 0.12);
+    }
+
+    .cover-wrap {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #e9e4d8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .cover-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .cover-placeholder {
+      padding: 10px;
+      text-align: center;
+      font-size: 0.82rem;
+      color: #444;
+      font-weight: 700;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #ece7dc;
+      width: fit-content;
+    }
+
+    .card.selected .badge {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .title {
+      font-weight: 700;
+      font-size: 0.98rem;
+      margin: 0;
+    }
+
+    .artist {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .note {
+      font-size: 0.78rem;
+      color: #9a3412;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-radius: 6px;
+      padding: 4px 8px;
+      margin-top: auto;
+    }
+
+    .output-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    button.primary {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #f1ede4;
+      color: var(--ink);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .status {
+      font-size: 0.85rem;
+      color: #15803d;
+      font-weight: 700;
+      align-self: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>CDレンタルカタログ</h1>
+      <p class="sub">借りたいCDの番号を打つか、カードをタップしてね。下のメッセージをコピーして送ってくれればOK！</p>
+    </header>
+
+    <section class="controls">
+      <div>
+        <label for="numberInput">借りたい番号を入力（例: 01, 03, 15 / 全角OK）</label>
+        <input id="numberInput" type="text" placeholder="例: 01, 02, 15" autocomplete="off" />
+        <div id="quickNums" class="quick-nums"></div>
+      </div>
+
+      <div>
+        <label for="searchInput">アーティスト・タイトルで絞り込み</label>
+        <input id="searchInput" type="text" placeholder="例: 玉置浩二、YMO、松任谷由実、井上陽水..." autocomplete="off" />
+      </div>
+    </section>
+
+    <section id="catalogGrid" class="grid"></section>
+
+    <section class="output-box">
+      <label for="messageOutput">送信用メッセージ</label>
+      <textarea id="messageOutput" readonly></textarea>
+      <div class="btn-row">
+        <button id="copyBtn" class="primary" type="button">メッセージをコピー</button>
+        <button id="clearBtn" class="secondary" type="button">選択をクリア</button>
+        <span id="copyStatus" class="status"></span>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // あとでここに正確なジャケット画像URLを入れてね
+    const COVER_URLS = {
+      "01": "https://files.catbox.moe/i3xrm5.jpg",
+      "02": "https://files.catbox.moe/srtem7.jpg",
+      "03": "https://files.catbox.moe/rqfgo3.jpg",
+      "04": "https://files.catbox.moe/ddosqd.jpg",
+      "05": "https://files.catbox.moe/v25rk4.jpg",
+      "06": "https://files.catbox.moe/8u4ay3.jpg",
+      "07": "https://files.catbox.moe/wo2e6s.jpg",
+      "08": "https://files.catbox.moe/lwcvap.jpg",
+      "09": "https://files.catbox.moe/z141ax.png",
+      "10": "https://files.catbox.moe/jo11qb.jpg",
+      "11": "https://files.catbox.moe/qre0ox.jpg",
+      "12": "https://files.catbox.moe/1ojg43.jpg",
+      "13": "https://files.catbox.moe/q64nrq.jpg",
+      "14": "https://files.catbox.moe/zd1lqu.jpg",
+      "15": "https://files.catbox.moe/2ar8q7.jpg"
+    };
+
+    const CD_CATALOG = [
+      { no: "01", title: "GOLDEN☆BEST Early Times Plus", artist: "玉置浩二", note: "" },
+      { no: "02", title: "U-miz", artist: "松任谷由実", note: "" },
+      { no: "03", title: "田園（8cmシングル）", artist: "玉置浩二", note: "ケースを外さないようにしてください" },
+      { no: "04", title: "PORNO GRAFFITTI BEST BLUE'S", artist: "ポルノグラフィティ", note: "" },
+      { no: "05", title: "BORN TO BE FUNKY", artist: "バブルガム・ブラザーズ", note: "" },
+      { no: "06", title: "TECHNODON", artist: "NOT YMO", note: "" },
+      { no: "07", title: "BTTB（1998年盤）", artist: "坂本龍一", note: "" },
+      { no: "08", title: "千のナイフ", artist: "坂本龍一", note: "" },
+      { no: "09", title: "YMO TRANCE", artist: "RESONANCE-T", note: "" },
+      { no: "10", title: "YELLOW MAGIC ORCHESTRA", artist: "YELLOW MAGIC ORCHESTRA", note: "" },
+      { no: "11", title: "ソリッド・ステイト・サヴァイヴァー", artist: "YELLOW MAGIC ORCHESTRA", note: "" },
+      { no: "12", title: "NO SIDE", artist: "松任谷由実", note: "" },
+      { no: "13", title: "IN SQUARE CIRCLE", artist: "スティーヴィー・ワンダー", note: "" },
+      { no: "14", title: "Yuming Brand Part 1", artist: "松任谷由実", note: "" },
+      { no: "15", title: "少年時代（8cmシングル）", artist: "井上陽水", note: "ケースを外さないようにしてください" }
+    ];
+
+    const selectedSet = new Set();
+    const numberInput = document.getElementById("numberInput");
+    const searchInput = document.getElementById("searchInput");
+    const catalogGrid = document.getElementById("catalogGrid");
+    const quickNums = document.getElementById("quickNums");
+    const messageOutput = document.getElementById("messageOutput");
+    const copyBtn = document.getElementById("copyBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const copyStatus = document.getElementById("copyStatus");
+
+    function normalizeNo(raw) {
+      const half = raw.replace(/[０-９]/g, (ch) =>
+        String.fromCharCode(ch.charCodeAt(0) - 0xfee0)
+      );
+      const digits = half.replace(/\D/g, "");
+      if (!digits) return null;
+      const padded = digits.padStart(2, "0");
+      return CD_CATALOG.some((item) => item.no === padded) ? padded : null;
+    }
+
+    function syncInputFromSet() {
+      const sorted = Array.from(selectedSet).sort();
+      numberInput.value = sorted.join(", ");
+      updateMessage();
+      renderQuickNumStates();
+      renderCardStates();
+    }
+
+    function syncSetFromInput() {
+      const tokens = numberInput.value.split(/[,\s、，/／]+/);
+      selectedSet.clear();
+      for (const token of tokens) {
+        const no = normalizeNo(token);
+        if (no) selectedSet.add(no);
+      }
+      updateMessage();
+      renderQuickNumStates();
+      renderCardStates();
+    }
+
+    function toggleNo(no) {
+      if (selectedSet.has(no)) {
+        selectedSet.delete(no);
+      } else {
+        selectedSet.add(no);
+      }
+      syncInputFromSet();
+    }
+
+    function updateMessage() {
+      const sorted = Array.from(selectedSet).sort();
+      if (sorted.length === 0) {
+        messageOutput.value = "【CDレンタル希望】\n借りたい番号をまだ選んでいないよ。";
+        return;
+      }
+      const lines = sorted.map((no) => {
+        const item = CD_CATALOG.find((cd) => cd.no === no);
+        return `・No.${item.no} ${item.title} / ${item.artist}`;
+      });
+      messageOutput.value =
+        `【CDレンタル希望】\n希望番号: ${sorted.join(", ")}\n\n` + lines.join("\n");
+    }
+
+    function renderQuickNums() {
+      quickNums.innerHTML = "";
+      for (const item of CD_CATALOG) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "num-btn";
+        btn.dataset.no = item.no;
+        btn.textContent = item.no;
+        btn.addEventListener("click", () => toggleNo(item.no));
+        quickNums.appendChild(btn);
+      }
+      renderQuickNumStates();
+    }
+
+    function renderQuickNumStates() {
+      quickNums.querySelectorAll(".num-btn").forEach((btn) => {
+        btn.classList.toggle("active", selectedSet.has(btn.dataset.no));
+      });
+    }
+
+    function renderCatalog() {
+      const query = searchInput.value.trim().toLowerCase();
+      catalogGrid.innerHTML = "";
+
+      const filtered = CD_CATALOG.filter((item) => {
+        if (!query) return true;
+        return (
+          item.no.includes(query) ||
+          item.title.toLowerCase().includes(query) ||
+          item.artist.toLowerCase().includes(query)
+        );
+      });
+
+      for (const item of filtered) {
+        const card = document.createElement("article");
+        card.className = "card";
+        card.dataset.no = item.no;
+
+        const url = (COVER_URLS[item.no] || "").trim();
+        const coverHtml = url
+          ? `<img src="${url}" alt="${item.title}" loading="lazy" />`
+          : `<div class="cover-placeholder">No.${item.no}<br />画像URL未設定</div>`;
+
+        const noteHtml = item.note ? `<div class="note">${item.note}</div>` : "";
+
+        card.innerHTML = `
+          <div class="cover-wrap">${coverHtml}</div>
+          <span class="badge">No.${item.no}</span>
+          <h2 class="title">${item.title}</h2>
+          <p class="artist">${item.artist}</p>
+          ${noteHtml}
+        `;
+
+        card.addEventListener("click", () => toggleNo(item.no));
+        catalogGrid.appendChild(card);
+      }
+
+      renderCardStates();
+    }
+
+    function renderCardStates() {
+      catalogGrid.querySelectorAll(".card").forEach((card) => {
+        card.classList.toggle("selected", selectedSet.has(card.dataset.no));
+      });
+    }
+
+    numberInput.addEventListener("input", syncSetFromInput);
+    searchInput.addEventListener("input", renderCatalog);
+
+    clearBtn.addEventListener("click", () => {
+      selectedSet.clear();
+      syncInputFromSet();
+      copyStatus.textContent = "";
+    });
+
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(messageOutput.value);
+        copyStatus.textContent = "コピーしたよ！";
+      } catch {
+        messageOutput.select();
+        document.execCommand("copy");
+        copyStatus.textContent = "コピーしたよ！";
+      }
+    });
+
+    renderQuickNums();
+    renderCatalog();
+    updateMessage();
+  </script>
+</body>
+</html>
