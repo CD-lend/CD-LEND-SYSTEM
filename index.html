@@ -59,7 +59,7 @@
       padding: 18px;
       margin-bottom: 20px;
       display: grid;
-      gap: 14px;
+      gap: 16px;
     }
 
     label {
@@ -82,18 +82,20 @@
     }
 
     textarea {
-      min-height: 120px;
+      min-height: 140px;
       resize: vertical;
     }
 
-    .quick-nums {
+    .quick-nums,
+    .preset-row {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
       margin-top: 8px;
     }
 
-    .num-btn {
+    .num-btn,
+    .preset-btn {
       border: 1px solid var(--border);
       background: #faf8f3;
       color: var(--ink);
@@ -104,10 +106,54 @@
       cursor: pointer;
     }
 
-    .num-btn.active {
+    .num-btn.active,
+    .preset-btn.active {
       background: var(--accent);
       border-color: var(--accent);
       color: #fff;
+    }
+
+    .date-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .date-picker-btn {
+      width: 100%;
+      text-align: left;
+      border: 1px solid #c8c2b6;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      background: #fcfbf8;
+      color: var(--ink);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .date-picker-btn:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .date-sub {
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .hidden-date-input {
+      position: fixed;
+      opacity: 0;
+      pointer-events: none;
+      width: 1px;
+      height: 1px;
     }
 
     .grid {
@@ -251,7 +297,7 @@
   <div class="container">
     <header>
       <h1>CDレンタルカタログ</h1>
-      <p class="sub">借りたいCDの番号を打つか、カードをタップしてね。下のメッセージをコピーして送ってくれればOK！</p>
+      <p class="sub">借りたいCDと貸出期間を選んでね。下のメッセージをコピーして送ってくれればOK！</p>
     </header>
 
     <section class="controls">
@@ -259,6 +305,36 @@
         <label for="numberInput">借りたい番号を入力（例: 01, 03, 15 / 全角OK）</label>
         <input id="numberInput" type="text" placeholder="例: 01, 02, 15" autocomplete="off" />
         <div id="quickNums" class="quick-nums"></div>
+      </div>
+
+      <div>
+        <label>貸出希望期間（押すとカレンダーが開くよ）</label>
+        <div class="preset-row" id="presetRow">
+          <button type="button" class="preset-btn" data-days="3">3日間</button>
+          <button type="button" class="preset-btn active" data-days="7">1週間</button>
+          <button type="button" class="preset-btn" data-days="14">2週間</button>
+          <button type="button" class="preset-btn" data-days="custom">カスタム</button>
+        </div>
+
+        <div class="date-grid">
+          <div>
+            <span class="date-sub">開始日（借りたい日）</span>
+            <button type="button" id="startDateBtn" class="date-picker-btn">
+              <span id="startDateLabel">未指定</span>
+              <span>📅</span>
+            </button>
+            <input type="date" id="startDatePicker" class="hidden-date-input" />
+          </div>
+
+          <div>
+            <span class="date-sub">返却予定日</span>
+            <button type="button" id="endDateBtn" class="date-picker-btn">
+              <span id="endDateLabel">未指定</span>
+              <span>📅</span>
+            </button>
+            <input type="date" id="endDatePicker" class="hidden-date-input" />
+          </div>
+        </div>
       </div>
 
       <div>
@@ -318,14 +394,98 @@
     ];
 
     const selectedSet = new Set();
+    let rentalDays = 7; // 3, 7, 14, or "custom"
+    let startDateStr = ""; // "YYYY-MM-DD"
+    let endDateStr = "";   // "YYYY-MM-DD"
+
     const numberInput = document.getElementById("numberInput");
     const searchInput = document.getElementById("searchInput");
     const catalogGrid = document.getElementById("catalogGrid");
     const quickNums = document.getElementById("quickNums");
+    const presetRow = document.getElementById("presetRow");
+    const startDateBtn = document.getElementById("startDateBtn");
+    const endDateBtn = document.getElementById("endDateBtn");
+    const startDatePicker = document.getElementById("startDatePicker");
+    const endDatePicker = document.getElementById("endDatePicker");
+    const startDateLabel = document.getElementById("startDateLabel");
+    const endDateLabel = document.getElementById("endDateLabel");
     const messageOutput = document.getElementById("messageOutput");
     const copyBtn = document.getElementById("copyBtn");
     const clearBtn = document.getElementById("clearBtn");
     const copyStatus = document.getElementById("copyStatus");
+
+    const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
+
+    function parseLocalDate(str) {
+      if (!str) return null;
+      const [y, m, d] = str.split("-").map(Number);
+      return new Date(y, m - 1, d);
+    }
+
+    function formatIsoDate(dateObj) {
+      const y = dateObj.getFullYear();
+      const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+      const d = String(dateObj.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function addDays(str, daysToAdd) {
+      const base = parseLocalDate(str);
+      if (!base) return "";
+      const next = new Date(base.getFullYear(), base.getMonth(), base.getDate() + daysToAdd);
+      return formatIsoDate(next);
+    }
+
+    function diffDays(startStr, endStr) {
+      const s = parseLocalDate(startStr);
+      const e = parseLocalDate(endStr);
+      if (!s || !e) return null;
+      const msPerDay = 1000 * 60 * 60 * 24;
+      return Math.round((e - s) / msPerDay);
+    }
+
+    function formatDisplayDate(str) {
+      const d = parseLocalDate(str);
+      if (!d) return "未指定";
+      const w = WEEKDAYS[d.getDay()];
+      return `${d.getMonth() + 1}/${d.getDate()}（${w}）`;
+    }
+
+    function getPresetLabel(days) {
+      if (days === 3) return "3日間";
+      if (days === 7) return "1週間";
+      if (days === 14) return "2週間";
+      return "カスタム";
+    }
+
+    function syncDatesWithPreset() {
+      if (!startDateStr) return;
+      if (typeof rentalDays === "number") {
+        endDateStr = addDays(startDateStr, rentalDays);
+      }
+    }
+
+    function renderDateUI() {
+      startDateLabel.textContent = formatDisplayDate(startDateStr);
+      endDateLabel.textContent = formatDisplayDate(endDateStr);
+      startDatePicker.value = startDateStr;
+      endDatePicker.value = endDateStr;
+
+      presetRow.querySelectorAll(".preset-btn").forEach((btn) => {
+        const val = btn.dataset.days === "custom" ? "custom" : Number(btn.dataset.days);
+        btn.classList.toggle("active", rentalDays === val);
+      });
+    }
+
+    function openPicker(pickerEl, fallbackStr) {
+      pickerEl.value = fallbackStr || formatIsoDate(new Date());
+      if (typeof pickerEl.showPicker === "function") {
+        pickerEl.showPicker();
+      } else {
+        pickerEl.focus();
+        pickerEl.click();
+      }
+    }
 
     function normalizeNo(raw) {
       const half = raw.replace(/[０-９]/g, (ch) =>
@@ -366,18 +526,33 @@
       syncInputFromSet();
     }
 
+    function buildPeriodLine() {
+      if (!startDateStr && !endDateStr) {
+        return "希望期間: 相談したい";
+      }
+      const startText = startDateStr ? formatDisplayDate(startDateStr) : "未定";
+      const endText = endDateStr ? formatDisplayDate(endDateStr) : "未定";
+      const presetText = getPresetLabel(rentalDays);
+      return `希望期間: ${startText} 〜 ${endText}（${presetText}）`;
+    }
+
     function updateMessage() {
       const sorted = Array.from(selectedSet).sort();
+      const periodLine = buildPeriodLine();
+
       if (sorted.length === 0) {
-        messageOutput.value = "【CDレンタル希望】\n借りたい番号をまだ選んでいないよ。";
+        messageOutput.value = `【CDレンタル希望】\n${periodLine}\n借りたい番号をまだ選んでいないよ。`;
         return;
       }
+
       const lines = sorted.map((no) => {
         const item = CD_CATALOG.find((cd) => cd.no === no);
         return `・No.${item.no} ${item.title} / ${item.artist}`;
       });
+
       messageOutput.value =
-        `【CDレンタル希望】\n希望番号: ${sorted.join(", ")}\n\n` + lines.join("\n");
+        `【CDレンタル希望】\n希望番号: ${sorted.join(", ")}\n${periodLine}\n\n` +
+        lines.join("\n");
     }
 
     function renderQuickNums() {
@@ -446,12 +621,64 @@
       });
     }
 
+    presetRow.querySelectorAll(".preset-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        rentalDays = btn.dataset.days === "custom" ? "custom" : Number(btn.dataset.days);
+        if (!startDateStr) {
+          startDateStr = formatIsoDate(new Date());
+        }
+        syncDatesWithPreset();
+        renderDateUI();
+        updateMessage();
+      });
+    });
+
+    startDateBtn.addEventListener("click", () => {
+      openPicker(startDatePicker, startDateStr);
+    });
+
+    endDateBtn.addEventListener("click", () => {
+      openPicker(endDatePicker, endDateStr || startDateStr);
+    });
+
+    startDatePicker.addEventListener("change", () => {
+      if (!startDatePicker.value) return;
+      startDateStr = startDatePicker.value;
+      if (typeof rentalDays === "number") {
+        endDateStr = addDays(startDateStr, rentalDays);
+      } else if (endDateStr && endDateStr < startDateStr) {
+        endDateStr = startDateStr;
+      }
+      renderDateUI();
+      updateMessage();
+    });
+
+    endDatePicker.addEventListener("change", () => {
+      if (!endDatePicker.value) return;
+      endDateStr = endDatePicker.value;
+      if (startDateStr && endDateStr < startDateStr) {
+        startDateStr = endDateStr;
+      }
+      if (startDateStr) {
+        const diff = diffDays(startDateStr, endDateStr);
+        rentalDays = [3, 7, 14].includes(diff) ? diff : "custom";
+      } else {
+        rentalDays = "custom";
+      }
+      renderDateUI();
+      updateMessage();
+    });
+
     numberInput.addEventListener("input", syncSetFromInput);
     searchInput.addEventListener("input", renderCatalog);
 
     clearBtn.addEventListener("click", () => {
       selectedSet.clear();
+      rentalDays = 7;
+      startDateStr = "";
+      endDateStr = "";
       syncInputFromSet();
+      renderDateUI();
       copyStatus.textContent = "";
     });
 
@@ -468,6 +695,7 @@
 
     renderQuickNums();
     renderCatalog();
+    renderDateUI();
     updateMessage();
   </script>
 </body>
