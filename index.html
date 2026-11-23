@@ -281,23 +281,22 @@
   </div>
 
   <script>
-    // あとでここに正確なジャケット画像URLを入れてね
     const COVER_URLS = {
-      "01": "https://files.catbox.moe/i3xrm5.jpg",
-      "02": "https://files.catbox.moe/srtem7.jpg",
-      "03": "https://files.catbox.moe/rqfgo3.jpg",
-      "04": "https://files.catbox.moe/ddosqd.jpg",
-      "05": "https://files.catbox.moe/v25rk4.jpg",
-      "06": "https://files.catbox.moe/8u4ay3.jpg",
-      "07": "https://files.catbox.moe/wo2e6s.jpg",
-      "08": "https://files.catbox.moe/lwcvap.jpg",
-      "09": "https://files.catbox.moe/z141ax.png",
-      "10": "https://files.catbox.moe/jo11qb.jpg",
-      "11": "https://files.catbox.moe/qre0ox.jpg",
-      "12": "https://files.catbox.moe/1ojg43.jpg",
-      "13": "https://files.catbox.moe/q64nrq.jpg",
-      "14": "https://files.catbox.moe/zd1lqu.jpg",
-      "15": "https://files.catbox.moe/2ar8q7.jpg"
+      "01": "./image/1.jpg",
+      "02": "./image/2.jpg",
+      "03": "./image/3.jpg",
+      "04": "./image/4.jpg",
+      "05": "./image/5.jpg",
+      "06": "./image/6.jpg",
+      "07": "./image/7.jpg",
+      "08": "./image/8.jpg",
+      "09": "./image/9.png",
+      "10": "./image/10.jpg",
+      "11": "./image/11.jpg",
+      "12": "./image/12.jpg",
+      "13": "./image/13.jpg",
+      "14": "./image/14.jpg",
+      "15": "./image/15.jpg"
     };
 
     const CD_CATALOG = [
@@ -421,8 +420,8 @@
 
         const url = (COVER_URLS[item.no] || "").trim();
         const coverHtml = url
-          ? `<img src="${url}" alt="${item.title}" loading="lazy" />`
-          : `<div class="cover-placeholder">No.${item.no}<br />画像URL未設定</div>`;
+          ? `<img src="${url}" alt="${item.title}" />`
+          : `<div class="cover-placeholder">No.${item.no}<br />画像未設定</div>`;
 
         const noteHtml = item.note ? `<div class="note">${item.note}</div>` : "";
 
